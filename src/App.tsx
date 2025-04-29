@@ -5,6 +5,7 @@ import { Toaster as Sonner } from "sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import AdminLayout from "@/components/layout/AdminLayout";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 // Lazy load pages for code splitting and better performance
 import { lazy, Suspense } from "react";
@@ -13,6 +14,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const ProductsPage = lazy(() => import("./pages/ProductsPage"));
 const OrdersPage = lazy(() => import("./pages/OrdersPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const LoginPage = lazy(() => import("./pages/LoginPage"));
 
 // Placeholder components for future implementation
 const VendorsPage = () => <div className="p-6">Vendors Management (Coming Soon)</div>;
@@ -36,7 +38,23 @@ const App = () => (
       <Sonner position="top-right" />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<AdminLayout />}>
+          <Route 
+            path="/login" 
+            element={
+              <Suspense fallback={<LoadingFallback />}>
+                <LoginPage />
+              </Suspense>
+            } 
+          />
+
+          <Route 
+            path="/" 
+            element={
+              <ProtectedRoute>
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
             <Route 
               index 
               element={
@@ -67,6 +85,7 @@ const App = () => (
             <Route path="payouts" element={<PayoutsPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
+          
           <Route 
             path="*" 
             element={

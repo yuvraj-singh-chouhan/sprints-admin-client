@@ -2,6 +2,8 @@
 import { NavLink } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/lib/authStore';
+import { toast } from 'sonner';
 import { 
   Home, 
   Package, 
@@ -13,7 +15,8 @@ import {
   ChevronLeft, 
   ChevronRight,
   Briefcase,
-  Wallet 
+  Wallet,
+  LogOut
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -24,6 +27,13 @@ interface SidebarProps {
 export function Sidebar({ open, setOpen }: SidebarProps) {
   const toggleSidebar = () => {
     setOpen(!open);
+  };
+
+  const { user, logout } = useAuthStore();
+
+  const handleLogout = () => {
+    logout();
+    toast.success('Logged out successfully');
   };
 
   return (
@@ -70,20 +80,40 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
 
         <div className="p-4 border-t border-gray-200">
           {open ? (
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-admin-primary/20 rounded-full flex items-center justify-center">
-                <Users size={16} className="text-admin-primary" />
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-admin-primary/20 rounded-full flex items-center justify-center">
+                  <Users size={16} className="text-admin-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">{user?.name || 'Admin User'}</p>
+                  <p className="text-xs text-gray-500">{user?.email || 'admin@shoebox.com'}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-medium">Admin User</p>
-                <p className="text-xs text-gray-500">admin@shoebox.com</p>
-              </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleLogout}
+                className="flex items-center justify-center gap-2 w-full"
+              >
+                <LogOut size={16} /> 
+                <span>Logout</span>
+              </Button>
             </div>
           ) : (
-            <div className="flex justify-center">
+            <div className="flex flex-col items-center gap-3">
               <div className="w-8 h-8 bg-admin-primary/20 rounded-full flex items-center justify-center">
                 <Users size={16} className="text-admin-primary" />
               </div>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleLogout}
+                className="w-8 h-8"
+                title="Logout"
+              >
+                <LogOut size={16} />
+              </Button>
             </div>
           )}
         </div>
