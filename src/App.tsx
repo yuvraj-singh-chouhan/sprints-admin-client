@@ -1,7 +1,7 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { Toaster as Sonner } from "sonner";
+import { Sonner } from "sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import AdminLayout from "@/components/layout/AdminLayout";
@@ -13,12 +13,12 @@ import { lazy, Suspense } from "react";
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const ProductsPage = lazy(() => import("./pages/ProductsPage"));
 const OrdersPage = lazy(() => import("./pages/OrdersPage"));
+const CustomersPage = lazy(() => import("./pages/CustomersPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 
 // Placeholder components for future implementation
 const VendorsPage = () => <div className="p-6">Vendors Management (Coming Soon)</div>;
-const CustomersPage = () => <div className="p-6">Customers Management (Coming Soon)</div>;
 const ShippingPage = () => <div className="p-6">Shipping Management (Coming Soon)</div>;
 const PayoutsPage = () => <div className="p-6">Payouts & Transactions (Coming Soon)</div>;
 const SettingsPage = () => <div className="p-6">Settings (Coming Soon)</div>;
@@ -79,8 +79,15 @@ const App = () => (
                 </Suspense>
               } 
             />
+            <Route 
+              path="customers" 
+              element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <CustomersPage />
+                </Suspense>
+              } 
+            />
             <Route path="vendors" element={<VendorsPage />} />
-            <Route path="customers" element={<CustomersPage />} />
             <Route path="shipping" element={<ShippingPage />} />
             <Route path="payouts" element={<PayoutsPage />} />
             <Route path="settings" element={<SettingsPage />} />
