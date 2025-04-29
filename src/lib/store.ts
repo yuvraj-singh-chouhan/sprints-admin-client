@@ -1,8 +1,8 @@
-
 import { create } from 'zustand';
 
 export type Status = 'idle' | 'loading' | 'success' | 'error';
 export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";
 
 export interface Product {
   id: string;
@@ -68,7 +68,7 @@ export interface Order {
   }[];
   totalAmount: number;
   status: OrderStatus;
-  paymentStatus: 'paid' | 'pending' | 'failed';
+  paymentStatus: PaymentStatus;
   shippingAddress: string;
   createdAt: string;
   updatedAt: string;
