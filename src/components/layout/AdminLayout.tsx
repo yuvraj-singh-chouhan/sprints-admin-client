@@ -1,10 +1,10 @@
 
 import { useState, useEffect } from 'react';
 import { Sidebar } from './Sidebar';
-import { Toaster } from 'sonner'; // This should be correct
 import { Outlet } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import { Toaster } from '@/components/ui/toaster';
 
 export default function AdminLayout() {
   const isMobile = useIsMobile();
@@ -27,7 +27,7 @@ export default function AdminLayout() {
         </main>
       </div>
 
-      <Toaster position="top-right" />
+      <Toaster />
     </div>
   );
 }
