@@ -1,7 +1,7 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { Sonner } from "sonner";
+import { Toaster as SonnerToaster } from "sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import AdminLayout from "@/components/layout/AdminLayout";
@@ -35,7 +35,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
-      <Sonner position="top-right" />
+      <SonnerToaster position="top-right" />
       <BrowserRouter>
         <Routes>
           <Route 

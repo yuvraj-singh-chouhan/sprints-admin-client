@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { Sidebar } from './Sidebar';
-import { Toaster } from 'sonner';
+import { Toaster } from 'sonner'; // This should be correct
 import { Outlet } from 'react-router-dom';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
