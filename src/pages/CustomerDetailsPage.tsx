@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useStore, Customer } from '@/lib/store';
@@ -26,7 +27,7 @@ const CustomerDetailsPage = () => {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   useEffect(() => {
-    if (customersStatus !== 'loaded') {
+    if (customersStatus !== 'success') {
       fetchCustomers();
     }
   }, [fetchCustomers, customersStatus]);
