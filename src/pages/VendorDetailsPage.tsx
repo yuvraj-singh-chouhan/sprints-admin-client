@@ -23,7 +23,7 @@ const VendorDetailsPage = () => {
   const [vendor, setVendor] = useState<Vendor | null>(null);
 
   useEffect(() => {
-    if (vendorsStatus !== 'success') {
+    if (vendorsStatus !== 'loaded') {
       fetchVendors();
     }
   }, [fetchVendors, vendorsStatus]);
