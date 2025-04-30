@@ -1,7 +1,8 @@
 
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useStore } from '@/lib/store';
-import { Package, Search, Filter, Plus } from 'lucide-react';
+import { Package, Search, Filter, Plus, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -119,12 +120,13 @@ export default function ProductsPage() {
                     <TableHead>Inventory</TableHead>
                     <TableHead>Vendor</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead className="w-[60px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredProducts.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8">
+                      <TableCell colSpan={7} className="text-center py-8">
                         No products found.
                       </TableCell>
                     </TableRow>
@@ -190,6 +192,14 @@ function ProductRow({ product }: { product: Product }) {
         <Badge variant="outline" className={cn("font-normal", inventoryStatus.class)}>
           {inventoryStatus.label}
         </Badge>
+      </TableCell>
+      <TableCell>
+        <Link to={`/products/${product.id}`}>
+          <Button variant="ghost" size="icon" className="rounded-full">
+            <ExternalLink className="h-4 w-4" />
+            <span className="sr-only">View Details</span>
+          </Button>
+        </Link>
       </TableCell>
     </TableRow>
   );
