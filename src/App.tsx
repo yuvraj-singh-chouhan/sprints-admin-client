@@ -12,6 +12,7 @@ import { lazy, Suspense } from "react";
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const ProductsPage = lazy(() => import("./pages/ProductsPage"));
 const OrdersPage = lazy(() => import("./pages/OrdersPage"));
+const OrderDetailsPage = lazy(() => import("./pages/OrderDetailsPage"));
 const CustomersPage = lazy(() => import("./pages/CustomersPage"));
 const CustomerDetailsPage = lazy(() => import("./pages/CustomerDetailsPage"));
 const VendorsPage = lazy(() => import("./pages/VendorsPage"));
@@ -76,6 +77,14 @@ const App = () => (
               element={
                 <Suspense fallback={<LoadingFallback />}>
                   <OrdersPage />
+                </Suspense>
+              } 
+            />
+            <Route 
+              path="orders/:orderId" 
+              element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <OrderDetailsPage />
                 </Suspense>
               } 
             />

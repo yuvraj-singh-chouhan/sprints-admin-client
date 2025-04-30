@@ -1,7 +1,8 @@
 
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useStore, type OrderStatus } from '@/lib/store';
-import { ShoppingCart, Search, Filter } from 'lucide-react';
+import { ShoppingCart, Search, Filter, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -188,7 +189,15 @@ function OrderRow({ order, onStatusUpdate }: {
 
   return (
     <TableRow className="hover:bg-muted/50">
-      <TableCell className="font-medium">{order.id}</TableCell>
+      <TableCell className="font-medium">
+        <Link
+          to={`/orders/${order.id}`}
+          className="flex items-center text-blue-600 hover:text-blue-800 hover:underline"
+        >
+          {order.id}
+          <ExternalLink className="ml-1 h-3 w-3" />
+        </Link>
+      </TableCell>
       <TableCell>
         <div>{order.customer.name}</div>
         <div className="text-xs text-muted-foreground">{order.customer.email}</div>
@@ -211,47 +220,55 @@ function OrderRow({ order, onStatusUpdate }: {
         </Badge>
       </TableCell>
       <TableCell>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
-              Update Status
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                Update Status
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Change Status</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={() => onStatusUpdate(order.id, 'pending')}
+                disabled={order.status === 'pending'}
+              >
+                Pending
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => onStatusUpdate(order.id, 'processing')}
+                disabled={order.status === 'processing'}
+              >
+                Processing
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => onStatusUpdate(order.id, 'shipped')}
+                disabled={order.status === 'shipped'}
+              >
+                Shipped
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => onStatusUpdate(order.id, 'delivered')}
+                disabled={order.status === 'delivered'}
+              >
+                Delivered
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => onStatusUpdate(order.id, 'cancelled')}
+                disabled={order.status === 'cancelled'}
+              >
+                Cancelled
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
+          <Link to={`/orders/${order.id}`}>
+            <Button variant="ghost" size="sm">
+              View Details
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Change Status</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem 
-              onClick={() => onStatusUpdate(order.id, 'pending')}
-              disabled={order.status === 'pending'}
-            >
-              Pending
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={() => onStatusUpdate(order.id, 'processing')}
-              disabled={order.status === 'processing'}
-            >
-              Processing
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={() => onStatusUpdate(order.id, 'shipped')}
-              disabled={order.status === 'shipped'}
-            >
-              Shipped
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={() => onStatusUpdate(order.id, 'delivered')}
-              disabled={order.status === 'delivered'}
-            >
-              Delivered
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={() => onStatusUpdate(order.id, 'cancelled')}
-              disabled={order.status === 'cancelled'}
-            >
-              Cancelled
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          </Link>
+        </div>
       </TableCell>
     </TableRow>
   );
