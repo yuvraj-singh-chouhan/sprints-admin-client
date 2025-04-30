@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useStore, Customer } from '@/lib/store';
@@ -17,6 +16,7 @@ import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import CustomerEditDialog from '@/components/customers/CustomerEditDialog';
 import CustomerDeleteDialog from '@/components/customers/CustomerDeleteDialog';
+import { Badge } from '@/components/ui/badge';
 
 const CustomerDetailsPage = () => {
   const { customerId } = useParams();
@@ -111,13 +111,9 @@ const CustomerDetailsPage = () => {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <h1 className="text-2xl font-bold tracking-tight">{customer.name}</h1>
-          <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-            customer.status === 'active'
-              ? 'bg-green-100 text-green-800'
-              : 'bg-red-100 text-red-800'
-          }`}>
+          <Badge variant={customer.status === 'active' ? 'default' : 'destructive'} className="ml-2">
             {customer.status}
-          </span>
+          </Badge>
         </div>
         <div className="flex gap-2">
           <Button
@@ -151,7 +147,7 @@ const CustomerDetailsPage = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
+        <Card className="border-l-4 border-l-primary">
           <CardHeader>
             <CardTitle>Basic Information</CardTitle>
           </CardHeader>
@@ -175,7 +171,7 @@ const CustomerDetailsPage = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-l-4 border-l-accent">
           <CardHeader>
             <CardTitle>Order Information</CardTitle>
           </CardHeader>

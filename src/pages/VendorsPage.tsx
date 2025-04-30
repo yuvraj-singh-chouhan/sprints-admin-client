@@ -19,6 +19,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from '@/components/ui/badge';
 
 const VendorsPage = () => {
   const { vendors, vendorsStatus, fetchVendors } = useVendorStore();
@@ -100,9 +101,9 @@ const VendorsPage = () => {
         </div>
       ) : (
         <>
-          <div className="rounded-md border">
+          <div className="rounded-md border shadow-sm">
             <Table>
-              <TableHeader>
+              <TableHeader className="bg-muted/50">
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
@@ -122,18 +123,14 @@ const VendorsPage = () => {
                   </TableRow>
                 ) : (
                   paginatedVendors.map((vendor) => (
-                    <TableRow key={vendor.id}>
+                    <TableRow key={vendor.id} className="hover:bg-muted/30">
                       <TableCell className="font-medium">{vendor.name}</TableCell>
                       <TableCell>{vendor.email}</TableCell>
                       <TableCell>{vendor.contactPerson}</TableCell>
                       <TableCell>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          vendor.status === 'active'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}>
+                        <Badge variant={vendor.status === 'active' ? 'default' : 'secondary'}>
                           {vendor.status}
-                        </span>
+                        </Badge>
                       </TableCell>
                       <TableCell>{vendor.productsCount}</TableCell>
                       <TableCell>${vendor.revenue.toFixed(2)}</TableCell>

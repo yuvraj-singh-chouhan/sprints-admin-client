@@ -21,6 +21,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from '@/components/ui/badge';
 
 const CustomersPage = () => {
   const { customers, customersStatus, fetchCustomers } = useStore();
@@ -124,9 +125,9 @@ const CustomersPage = () => {
         </div>
       ) : (
         <>
-          <div className="rounded-md border">
+          <div className="rounded-md border shadow-sm">
             <Table>
-              <TableHeader>
+              <TableHeader className="bg-muted/50">
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
@@ -145,17 +146,13 @@ const CustomersPage = () => {
                   </TableRow>
                 ) : (
                   paginatedCustomers.map((customer) => (
-                    <TableRow key={customer.id}>
+                    <TableRow key={customer.id} className="hover:bg-muted/30">
                       <TableCell className="font-medium">{customer.name}</TableCell>
                       <TableCell>{customer.email}</TableCell>
                       <TableCell>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          customer.status === 'active'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}>
+                        <Badge variant={customer.status === 'active' ? 'default' : 'destructive'}>
                           {customer.status}
-                        </span>
+                        </Badge>
                       </TableCell>
                       <TableCell>{customer.orders}</TableCell>
                       <TableCell>${customer.totalSpent.toFixed(2)}</TableCell>

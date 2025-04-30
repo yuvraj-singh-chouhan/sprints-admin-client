@@ -15,6 +15,7 @@ import {
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 const VendorDetailsPage = () => {
   const { vendorId } = useParams();
@@ -83,18 +84,14 @@ const VendorDetailsPage = () => {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <h1 className="text-2xl font-bold tracking-tight">{vendor.name}</h1>
-          <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-            vendor.status === 'active'
-              ? 'bg-green-100 text-green-800'
-              : 'bg-yellow-100 text-yellow-800'
-          }`}>
+          <Badge variant={vendor.status === 'active' ? 'default' : 'secondary'} className="ml-2">
             {vendor.status}
-          </span>
+          </Badge>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
+        <Card className="border-l-4 border-l-primary">
           <CardHeader>
             <CardTitle>Vendor Information</CardTitle>
           </CardHeader>
@@ -122,7 +119,7 @@ const VendorDetailsPage = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-l-4 border-l-accent">
           <CardHeader>
             <CardTitle>Business Information</CardTitle>
           </CardHeader>
