@@ -13,11 +13,13 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const ProductsPage = lazy(() => import("./pages/ProductsPage"));
 const OrdersPage = lazy(() => import("./pages/OrdersPage"));
 const CustomersPage = lazy(() => import("./pages/CustomersPage"));
+const CustomerDetailsPage = lazy(() => import("./pages/CustomerDetailsPage"));
+const VendorsPage = lazy(() => import("./pages/VendorsPage"));
+const VendorDetailsPage = lazy(() => import("./pages/VendorDetailsPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 
 // Placeholder components for future implementation
-const VendorsPage = () => <div className="p-6">Vendors Management (Coming Soon)</div>;
 const ShippingPage = () => <div className="p-6">Shipping Management (Coming Soon)</div>;
 const PayoutsPage = () => <div className="p-6">Payouts & Transactions (Coming Soon)</div>;
 const SettingsPage = () => <div className="p-6">Settings (Coming Soon)</div>;
@@ -85,7 +87,30 @@ const App = () => (
                 </Suspense>
               } 
             />
-            <Route path="vendors" element={<VendorsPage />} />
+            <Route 
+              path="customers/:customerId" 
+              element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <CustomerDetailsPage />
+                </Suspense>
+              } 
+            />
+            <Route 
+              path="vendors" 
+              element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <VendorsPage />
+                </Suspense>
+              } 
+            />
+            <Route 
+              path="vendors/:vendorId" 
+              element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <VendorDetailsPage />
+                </Suspense>
+              } 
+            />
             <Route path="shipping" element={<ShippingPage />} />
             <Route path="payouts" element={<PayoutsPage />} />
             <Route path="settings" element={<SettingsPage />} />

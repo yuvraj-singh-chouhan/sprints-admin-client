@@ -1,16 +1,14 @@
 
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useStore, Customer } from '@/lib/store';
+import { useVendorStore, Vendor } from '@/lib/vendorStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
   Table, TableBody, TableCell, TableHead, 
   TableHeader, TableRow 
 } from '@/components/ui/table';
-import { Eye, Edit, Ban, Trash2, Search } from 'lucide-react';
-import CustomerEditDialog from '@/components/customers/CustomerEditDialog';
-import CustomerDeleteDialog from '@/components/customers/CustomerDeleteDialog';
+import { Eye, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import {
@@ -23,59 +21,37 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const CustomersPage = () => {
-  const { customers, customersStatus, fetchCustomers } = useStore();
+const VendorsPage = () => {
+  const { vendors, vendorsStatus, fetchVendors } = useVendorStore();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   // Items per page
   const itemsPerPage = 5;
 
   useEffect(() => {
-    fetchCustomers();
-  }, [fetchCustomers]);
+    fetchVendors();
+  }, [fetchVendors]);
 
-  // Filter customers based on search term and status
-  const filteredCustomers = customers.filter(customer => {
+  // Filter vendors based on search term and status
+  const filteredVendors = vendors.filter(vendor => {
     const matchesSearch = 
-      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.email.toLowerCase().includes(searchTerm.toLowerCase());
+      vendor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      vendor.email.toLowerCase().includes(searchTerm.toLowerCase());
       
     const matchesStatus = 
       statusFilter === 'all' || 
-      customer.status === statusFilter;
+      vendor.status === statusFilter;
     
     return matchesSearch && matchesStatus;
   });
 
   // Calculate pagination
-  const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredVendors.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedCustomers = filteredCustomers.slice(startIndex, startIndex + itemsPerPage);
-
-  const toggleCustomerStatus = async (customer: Customer) => {
-    try {
-      // In a real application, this would call an API
-      const newStatus = customer.status === 'active' ? 'banned' : 'active';
-      
-      // Update local state for instant feedback
-      useStore.setState({
-        customers: customers.map(c => 
-          c.id === customer.id ? { ...c, status: newStatus } : c
-        )
-      });
-      
-      toast.success(`Customer ${customer.name} ${newStatus === 'active' ? 'activated' : 'banned'} successfully!`);
-    } catch (error) {
-      toast.error('Failed to update customer status');
-      console.error('Error updating customer status:', error);
-    }
-  };
+  const paginatedVendors = filteredVendors.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <div className="space-y-6">
@@ -86,13 +62,13 @@ const CustomersPage = () => {
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>Customers</BreadcrumbPage>
+            <BreadcrumbPage>Vendors</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
       
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Customers</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Vendors</h1>
         <div className="flex flex-col sm:flex-row gap-2">
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -113,15 +89,15 @@ const CustomersPage = () => {
             <SelectContent>
               <SelectItem value="all">All Statuses</SelectItem>
               <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="banned">Banned</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
 
-      {customersStatus === 'loading' ? (
+      {vendorsStatus === 'loading' ? (
         <div className="flex justify-center py-8">
-          <p>Loading customers...</p>
+          <p>Loading vendors...</p>
         </div>
       ) : (
         <>
@@ -131,72 +107,45 @@ const CustomersPage = () => {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
+                  <TableHead>Contact Person</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Total Orders</TableHead>
-                  <TableHead>Total Spent</TableHead>
+                  <TableHead>Products</TableHead>
+                  <TableHead>Revenue</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedCustomers.length === 0 ? (
+                {paginatedVendors.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-4">
-                      No customers found.
+                    <TableCell colSpan={7} className="text-center py-4">
+                      No vendors found.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  paginatedCustomers.map((customer) => (
-                    <TableRow key={customer.id}>
-                      <TableCell className="font-medium">{customer.name}</TableCell>
-                      <TableCell>{customer.email}</TableCell>
+                  paginatedVendors.map((vendor) => (
+                    <TableRow key={vendor.id}>
+                      <TableCell className="font-medium">{vendor.name}</TableCell>
+                      <TableCell>{vendor.email}</TableCell>
+                      <TableCell>{vendor.contactPerson}</TableCell>
                       <TableCell>
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          customer.status === 'active'
+                          vendor.status === 'active'
                             ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
+                            : 'bg-yellow-100 text-yellow-800'
                         }`}>
-                          {customer.status}
+                          {vendor.status}
                         </span>
                       </TableCell>
-                      <TableCell>{customer.orders}</TableCell>
-                      <TableCell>${customer.totalSpent.toFixed(2)}</TableCell>
+                      <TableCell>{vendor.productsCount}</TableCell>
+                      <TableCell>${vendor.revenue.toFixed(2)}</TableCell>
                       <TableCell>
-                        <div className="flex space-x-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => navigate(`/customers/${customer.id}`)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              setSelectedCustomer(customer);
-                              setIsEditOpen(true);
-                            }}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => toggleCustomerStatus(customer)}
-                          >
-                            <Ban className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              setSelectedCustomer(customer);
-                              setIsDeleteOpen(true);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => navigate(`/vendors/${vendor.id}`)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))
@@ -238,22 +187,8 @@ const CustomersPage = () => {
           )}
         </>
       )}
-
-      {/* Customer edit dialog */}
-      <CustomerEditDialog
-        customer={selectedCustomer}
-        open={isEditOpen}
-        onOpenChange={setIsEditOpen}
-      />
-
-      {/* Customer delete dialog */}
-      <CustomerDeleteDialog
-        customer={selectedCustomer}
-        open={isDeleteOpen}
-        onOpenChange={setIsDeleteOpen}
-      />
     </div>
   );
 };
 
-export default CustomersPage;
+export default VendorsPage;
