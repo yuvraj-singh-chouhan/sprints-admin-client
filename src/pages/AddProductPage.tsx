@@ -26,6 +26,7 @@ const productSchema = z.object({
   category: z.string().min(1, "Please select a category"),
   subcategory: z.string().optional(),
   subsubcategory: z.string().optional(),
+  variantProductId: z.string().optional(), // New field for variant/related product
   
   // Step 2: Media
   images: z.array(z.object({
@@ -66,6 +67,7 @@ export default function AddProductPage() {
       category: "",
       subcategory: "",
       subsubcategory: "",
+      variantProductId: "", // Add default value for the new field
       images: [],
       stock: "0",
       sku: "",

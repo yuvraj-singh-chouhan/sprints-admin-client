@@ -19,6 +19,22 @@ import {
   FormMessage,
   Form 
 } from '@/components/ui/form';
+import { Button } from '@/components/ui/button';
+import { 
+  Popover, 
+  PopoverContent, 
+  PopoverTrigger 
+} from '@/components/ui/popover';
+import { 
+  Command, 
+  CommandEmpty, 
+  CommandGroup, 
+  CommandInput, 
+  CommandItem, 
+  CommandList 
+} from '@/components/ui/command';
+import { Check, ChevronsUpDown, Search } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 // Define proper types for our category structure
 interface Subcategory {
@@ -32,6 +48,29 @@ interface Category {
   name: string;
   subcategories?: Subcategory[];
 }
+
+// Mock product data for variant selection
+interface Product {
+  id: string;
+  name: string;
+  price: string;
+  category: string;
+  imageUrl?: string;
+}
+
+// Sample products data
+const productsData: Product[] = [
+  { id: "p1", name: "MacBook Pro 16", price: "2399", category: "laptops", imageUrl: "/placeholder.svg" },
+  { id: "p2", name: "iPhone 15 Pro", price: "999", category: "smartphones", imageUrl: "/placeholder.svg" },
+  { id: "p3", name: "AirPods Pro", price: "249", category: "phones", imageUrl: "/placeholder.svg" },
+  { id: "p4", name: "iPad Air", price: "599", category: "tablets", imageUrl: "/placeholder.svg" },
+  { id: "p5", name: "Samsung Galaxy S23", price: "899", category: "smartphones", imageUrl: "/placeholder.svg" },
+  { id: "p6", name: "Dell XPS 15", price: "1599", category: "laptops", imageUrl: "/placeholder.svg" },
+  { id: "p7", name: "Levi's Jeans", price: "89", category: "mens", imageUrl: "/placeholder.svg" },
+  { id: "p8", name: "Nike Running Shoes", price: "129", category: "mens", imageUrl: "/placeholder.svg" },
+  { id: "p9", name: "IKEA Desk", price: "299", category: "furniture", imageUrl: "/placeholder.svg" },
+  { id: "p10", name: "KitchenAid Mixer", price: "349", category: "kitchen", imageUrl: "/placeholder.svg" },
+];
 
 // Mock categories data with proper typing
 const categoriesData: Category[] = [
@@ -82,9 +121,13 @@ export default function ProductStepOne() {
   
   const selectedCategory = watch('category');
   const selectedSubcategory = watch('subcategory');
+  const selectedProduct = watch('variantProductId');
   
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [subsubcategories, setSubsubcategories] = useState<Subcategory[]>([]);
+  const [categorySearchOpen, setCategorySearchOpen] = useState(false);
+  const [productSearchOpen, setProductSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   
   // Update subcategories when category changes
   useEffect(() => {
@@ -128,6 +171,12 @@ export default function ProductStepOne() {
     
     setValue('subsubcategory', '');
   }, [selectedSubcategory, selectedCategory, setValue]);
+
+  // Filter products based on search query
+  const filteredProducts = productsData.filter(product => 
+    product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    product.id.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="space-y-6">
@@ -212,36 +261,141 @@ export default function ProductStepOne() {
           )}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Main Category */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Searchable Category Dropdown */}
           <FormField
             control={control}
             name="category"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="flex flex-col">
                 <FormLabel>Category</FormLabel>
-                <FormControl>
-                  <Select
-                    value={field.value}
-                    onValueChange={field.onChange}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categoriesData.map(category => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
+                <Popover open={categorySearchOpen} onOpenChange={setCategorySearchOpen}>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={categorySearchOpen}
+                        className="w-full justify-between"
+                      >
+                        {field.value
+                          ? categoriesData.find(category => category.id === field.value)?.name
+                          : "Select category"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Search category..." className="h-9" />
+                      <CommandEmpty>No category found.</CommandEmpty>
+                      <CommandList>
+                        <CommandGroup>
+                          {categoriesData.map((category) => (
+                            <CommandItem
+                              key={category.id}
+                              value={category.id}
+                              onSelect={() => {
+                                setValue("category", category.id);
+                                setCategorySearchOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  field.value === category.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {category.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <FormMessage />
               </FormItem>
             )}
           />
           
+          {/* Product Search for Variants */}
+          <FormField
+            control={control}
+            name="variantProductId"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>Related Product or Variant</FormLabel>
+                <Popover open={productSearchOpen} onOpenChange={setProductSearchOpen}>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={productSearchOpen}
+                        className="w-full justify-between"
+                      >
+                        {field.value
+                          ? productsData.find(product => product.id === field.value)?.name
+                          : "Search products"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[400px] p-0" align="start">
+                    <Command>
+                      <CommandInput 
+                        placeholder="Search products..." 
+                        className="h-9"
+                        value={searchQuery}
+                        onValueChange={setSearchQuery}
+                      />
+                      <CommandEmpty>No products found.</CommandEmpty>
+                      <CommandList>
+                        <CommandGroup>
+                          {filteredProducts.map((product) => (
+                            <CommandItem
+                              key={product.id}
+                              value={product.id}
+                              onSelect={() => {
+                                setValue("variantProductId", product.id);
+                                setProductSearchOpen(false);
+                              }}
+                              className="flex items-center"
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  field.value === product.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              <div className="flex items-center gap-2">
+                                {product.imageUrl && (
+                                  <img
+                                    src={product.imageUrl}
+                                    alt={product.name}
+                                    className="h-6 w-6 object-cover rounded"
+                                  />
+                                )}
+                                <div className="flex flex-col">
+                                  <span>{product.name}</span>
+                                  <span className="text-xs text-muted-foreground">${product.price}</span>
+                                </div>
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Subcategory - Only show if the selected category has subcategories */}
           {subcategories.length > 0 && (
             <FormField
