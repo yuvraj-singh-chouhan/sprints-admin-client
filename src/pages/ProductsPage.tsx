@@ -61,9 +61,11 @@ export default function ProductsPage() {
           </h1>
           <p className="text-muted-foreground">Manage your product inventory.</p>
         </div>
-        <Button className="bg-admin-primary hover:bg-admin-primary-hover">
-          <Plus size={16} className="mr-2" /> Add Product
-        </Button>
+        <Link to="/products/add">
+          <Button className="bg-admin-primary hover:bg-admin-primary-hover">
+            <Plus size={16} className="mr-2" /> Add Product
+          </Button>
+        </Link>
       </div>
 
       {/* Filters and search */}
