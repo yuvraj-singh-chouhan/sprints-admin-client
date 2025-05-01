@@ -20,8 +20,21 @@ import {
   Form 
 } from '@/components/ui/form';
 
-// Mock categories data - In a real application, this would be fetched from your API
-const categoriesData = [
+// Define proper types for our category structure
+interface Subcategory {
+  id: string;
+  name: string;
+  subcategories?: Subcategory[];
+}
+
+interface Category {
+  id: string;
+  name: string;
+  subcategories?: Subcategory[];
+}
+
+// Mock categories data with proper typing
+const categoriesData: Category[] = [
   { 
     id: "electronics", 
     name: "Electronics",
@@ -70,8 +83,8 @@ export default function ProductStepOne() {
   const selectedCategory = watch('category');
   const selectedSubcategory = watch('subcategory');
   
-  const [subcategories, setSubcategories] = useState<any[]>([]);
-  const [subsubcategories, setSubsubcategories] = useState<any[]>([]);
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+  const [subsubcategories, setSubsubcategories] = useState<Subcategory[]>([]);
   
   // Update subcategories when category changes
   useEffect(() => {
