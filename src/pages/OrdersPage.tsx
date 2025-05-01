@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useStore, type OrderStatus } from '@/lib/store';
-import { ShoppingCart, Search, Filter, ExternalLink } from 'lucide-react';
+import { ShoppingCart, Search, Filter, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -195,7 +195,7 @@ function OrderRow({ order, onStatusUpdate }: {
           className="flex items-center text-blue-600 hover:text-blue-800 hover:underline"
         >
           {order.id}
-          <ExternalLink className="ml-1 h-3 w-3" />
+          <Eye className="ml-1 h-3 w-3" />
         </Link>
       </TableCell>
       <TableCell>
@@ -264,8 +264,9 @@ function OrderRow({ order, onStatusUpdate }: {
           </DropdownMenu>
           
           <Link to={`/orders/${order.id}`}>
-            <Button variant="ghost" size="sm">
-              View Details
+            <Button variant="ghost" size="icon" className="rounded-full">
+              <Eye className="h-4 w-4" />
+              <span className="sr-only">View Details</span>
             </Button>
           </Link>
         </div>
