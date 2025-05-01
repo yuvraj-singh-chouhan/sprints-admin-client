@@ -25,6 +25,16 @@ import {
   PopoverContent, 
   PopoverTrigger 
 } from '@/components/ui/popover';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { 
   Command, 
   CommandEmpty, 
@@ -33,7 +43,7 @@ import {
   CommandItem, 
   CommandList 
 } from '@/components/ui/command';
-import { Check, ChevronsUpDown, Search } from 'lucide-react';
+import { Check, ChevronDown, ChevronRight, ChevronsUpDown, Plus, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Define proper types for our category structure
@@ -121,6 +131,7 @@ export default function ProductStepOne() {
   
   const selectedCategory = watch('category');
   const selectedSubcategory = watch('subcategory');
+  const selectedSubsubcategory = watch('subsubcategory');
   const selectedProduct = watch('variantProductId');
   
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
@@ -128,6 +139,9 @@ export default function ProductStepOne() {
   const [categorySearchOpen, setCategorySearchOpen] = useState(false);
   const [productSearchOpen, setProductSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [categoryTreeOpen, setCategoryTreeOpen] = useState(false);
+  const [selectedCategoryPath, setSelectedCategoryPath] = useState<string[]>([]);
+  const [categorySearchText, setCategorySearchText] = useState("");
   
   // Update subcategories when category changes
   useEffect(() => {
@@ -172,11 +186,125 @@ export default function ProductStepOne() {
     setValue('subsubcategory', '');
   }, [selectedSubcategory, selectedCategory, setValue]);
 
+  // Update selected category path when any category level changes
+  useEffect(() => {
+    const path: string[] = [];
+    
+    if (selectedCategory) {
+      const category = categoriesData.find(c => c.id === selectedCategory);
+      if (category) path.push(category.name);
+      
+      if (selectedSubcategory && category?.subcategories) {
+        const subcategory = category.subcategories.find(sc => sc.id === selectedSubcategory);
+        if (subcategory) path.push(subcategory.name);
+        
+        if (selectedSubsubcategory && subcategory?.subcategories) {
+          const subsubcategory = subcategory.subcategories.find(ssc => ssc.id === selectedSubsubcategory);
+          if (subsubcategory) path.push(subsubcategory.name);
+        }
+      }
+    }
+    
+    setSelectedCategoryPath(path);
+  }, [selectedCategory, selectedSubcategory, selectedSubsubcategory]);
+
   // Filter products based on search query
   const filteredProducts = productsData.filter(product => 
     product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     product.id.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Helper function to render categories recursively
+  const renderCategoryTree = (categories: Category[], depth = 0) => {
+    return categories.map(category => {
+      // Filter out categories that don't match search text if we have any
+      if (categorySearchText && !category.name.toLowerCase().includes(categorySearchText.toLowerCase())) {
+        // If this category doesn't match, check if any of its subcategories match
+        if (!category.subcategories || !category.subcategories.some(sub => 
+          sub.name.toLowerCase().includes(categorySearchText.toLowerCase())
+        )) {
+          return null;
+        }
+      }
+
+      const hasSubcategories = category.subcategories && category.subcategories.length > 0;
+      
+      if (hasSubcategories) {
+        return (
+          <DropdownMenuSub key={category.id}>
+            <DropdownMenuSubTrigger className={depth > 0 ? `pl-${depth * 2 + 2}` : ""}>
+              {category.name}
+              {depth === 0 && <ChevronRight className="ml-auto h-4 w-4" />}
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent>
+              <DropdownMenuItem 
+                onClick={() => {
+                  setValue('category', category.id);
+                  setValue('subcategory', '');
+                  setValue('subsubcategory', '');
+                  setCategoryTreeOpen(false);
+                }}
+                className="font-medium"
+              >
+                {category.name} (All)
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {renderCategoryTree(category.subcategories, depth + 1)}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+        );
+      } else {
+        return (
+          <DropdownMenuItem 
+            key={category.id}
+            onClick={() => {
+              if (depth === 0) {
+                setValue('category', category.id);
+                setValue('subcategory', '');
+                setValue('subsubcategory', '');
+              } else if (depth === 1) {
+                const parentCategory = categoriesData.find(cat => 
+                  cat.subcategories?.some(sub => sub.id === category.id)
+                );
+                if (parentCategory) {
+                  setValue('category', parentCategory.id);
+                  setValue('subcategory', category.id);
+                  setValue('subsubcategory', '');
+                }
+              } else if (depth === 2) {
+                let parentCategoryId = '';
+                let parentSubcategoryId = '';
+                
+                categoriesData.forEach(cat => {
+                  cat.subcategories?.forEach(subcat => {
+                    if (subcat.subcategories?.some(subsub => subsub.id === category.id)) {
+                      parentCategoryId = cat.id;
+                      parentSubcategoryId = subcat.id;
+                    }
+                  });
+                });
+                
+                if (parentCategoryId && parentSubcategoryId) {
+                  setValue('category', parentCategoryId);
+                  setValue('subcategory', parentSubcategoryId);
+                  setValue('subsubcategory', category.id);
+                }
+              }
+              setCategoryTreeOpen(false);
+            }}
+            className={depth > 0 ? `pl-${depth * 2 + 2}` : ""}
+          >
+            {category.name}
+          </DropdownMenuItem>
+        );
+      }
+    }).filter(Boolean); // Filter out nulls (non-matching categories)
+  };
+
+  const getCategoryPathDisplay = () => {
+    if (selectedCategoryPath.length === 0) return "Select category";
+    return selectedCategoryPath.join(" > ");
+  };
 
   return (
     <div className="space-y-6">
@@ -262,58 +390,44 @@ export default function ProductStepOne() {
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Searchable Category Dropdown */}
+          {/* Tree-like Category Selector */}
           <FormField
             control={control}
             name="category"
             render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel>Category</FormLabel>
-                <Popover open={categorySearchOpen} onOpenChange={setCategorySearchOpen}>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={categorySearchOpen}
-                        className="w-full justify-between"
-                      >
-                        {field.value
-                          ? categoriesData.find(category => category.id === field.value)?.name
-                          : "Select category"}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-full p-0" align="start">
-                    <Command>
-                      <CommandInput placeholder="Search category..." className="h-9" />
-                      <CommandEmpty>No category found.</CommandEmpty>
-                      <CommandList>
-                        <CommandGroup>
-                          {categoriesData.map((category) => (
-                            <CommandItem
-                              key={category.id}
-                              value={category.id}
-                              onSelect={() => {
-                                setValue("category", category.id);
-                                setCategorySearchOpen(false);
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  field.value === category.id ? "opacity-100" : "opacity-0"
-                                )}
-                              />
-                              {category.name}
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+                <DropdownMenu open={categoryTreeOpen} onOpenChange={setCategoryTreeOpen}>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-between"
+                    >
+                      <span className="truncate">{getCategoryPathDisplay()}</span>
+                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent 
+                    className="w-64 max-h-96 overflow-auto" 
+                    align="start"
+                  >
+                    <div className="p-2">
+                      <Input
+                        placeholder="Search categories..."
+                        value={categorySearchText}
+                        onChange={(e) => setCategorySearchText(e.target.value)}
+                        className="mb-2"
+                      />
+                    </div>
+                    {categorySearchText && <DropdownMenuSeparator />}
+                    {renderCategoryTree(categoriesData)}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem>
+                      <Plus className="mr-2 h-4 w-4" />
+                      <span>Create new category</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <FormMessage />
               </FormItem>
             )}
@@ -393,70 +507,6 @@ export default function ProductStepOne() {
               </FormItem>
             )}
           />
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Subcategory - Only show if the selected category has subcategories */}
-          {subcategories.length > 0 && (
-            <FormField
-              control={control}
-              name="subcategory"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Subcategory</FormLabel>
-                  <FormControl>
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select subcategory" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {subcategories.map(subcategory => (
-                          <SelectItem key={subcategory.id} value={subcategory.id}>
-                            {subcategory.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
-          
-          {/* Sub-subcategory - Only show if the selected subcategory has sub-subcategories */}
-          {subsubcategories.length > 0 && (
-            <FormField
-              control={control}
-              name="subsubcategory"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Sub-subcategory</FormLabel>
-                  <FormControl>
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select sub-subcategory" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {subsubcategories.map(subsubcategory => (
-                          <SelectItem key={subsubcategory.id} value={subsubcategory.id}>
-                            {subsubcategory.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
         </div>
       </div>
     </div>
