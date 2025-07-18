@@ -19,6 +19,8 @@ const CustomersPage = lazy(() => import("./pages/CustomersPage"));
 const CustomerDetailsPage = lazy(() => import("./pages/CustomerDetailsPage"));
 const VendorsPage = lazy(() => import("./pages/VendorsPage"));
 const VendorDetailsPage = lazy(() => import("./pages/VendorDetailsPage"));
+const UsersPage = lazy(() => import("./pages/UsersPage"));
+const RolesPage = lazy(() => import("./pages/RolesPage"));
 const ShippingPage = lazy(() => import("./pages/ShippingPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
@@ -135,6 +137,22 @@ const App = () => (
               element={
                 <Suspense fallback={<LoadingFallback />}>
                   <VendorDetailsPage />
+                </Suspense>
+              } 
+            />
+            <Route 
+              path="users" 
+              element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <UsersPage />
+                </Suspense>
+              } 
+            />
+            <Route 
+              path="roles" 
+              element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <RolesPage />
                 </Suspense>
               } 
             />

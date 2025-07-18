@@ -1,12 +1,21 @@
 
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useStore, type OrderStatus } from '@/lib/store';
-import { ShoppingCart, Search, Filter, Eye } from 'lucide-react';
+import { 
+  ShoppingCart, 
+  Search, 
+  Plus, 
+  Eye,
+  TrendingUp,
+  DollarSign,
+  Package,
+  Clock
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Table,
   TableBody,
@@ -24,19 +33,28 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { cn } from '@/lib/utils';
 import { type Order } from '@/lib/store';
 import { toast } from 'sonner';
+import StatsCard from '@/components/shared/StatsCard';
 
 export default function OrdersPage() {
   const { orders, ordersStatus, fetchOrders, updateOrderStatus } = useStore();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
   const [currentPage, setCurrentPage] = useState(1);
@@ -65,148 +83,223 @@ export default function OrdersPage() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedOrders = filteredOrders.slice(startIndex, startIndex + itemsPerPage);
 
+  // Calculate aggregate stats
+  const totalOrders = orders.length;
+  const totalRevenue = orders.reduce((sum, order) => sum + order.totalAmount, 0);
+  const pendingOrders = orders.filter(order => order.status === 'pending').length;
+  const completedOrders = orders.filter(order => order.status === 'delivered').length;
+
   // Handle updating order status
   const handleStatusUpdate = async (orderId: string, status: OrderStatus) => {
     await updateOrderStatus(orderId, status);
     toast.success(`Order ${orderId} status updated to ${status}`);
   };
 
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  };
+
   return (
-    <div className="space-y-8 animate-fade-in">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center">
-            <ShoppingCart className="mr-2 text-admin-primary" /> Orders
-          </h1>
-          <p className="text-muted-foreground">Manage customer orders.</p>
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Orders</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-6 bg-gradient-to-r from-admin-primary/5 to-admin-primary/10 rounded-lg border">
+        <div className="flex items-center gap-2">
+          <ShoppingCart className="h-8 w-8 text-admin-primary" />
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Orders</h1>
+            <p className="text-muted-foreground">Manage customer orders and fulfillment</p>
+          </div>
         </div>
+        <Button className="bg-admin-primary hover:bg-admin-primary-hover">
+          <Plus className="h-4 w-4 mr-2" />
+          Create Order
+        </Button>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatsCard
+          title="Total Orders"
+          value={totalOrders}
+          subtitle="All time orders"
+          icon={<ShoppingCart className="h-5 w-5" />}
+          color="blue"
+        />
+        <StatsCard
+          title="Total Revenue"
+          value={formatCurrency(totalRevenue)}
+          subtitle="From all orders"
+          icon={<DollarSign className="h-5 w-5" />}
+          color="green"
+        />
+        <StatsCard
+          title="Pending Orders"
+          value={pendingOrders}
+          subtitle="Awaiting processing"
+          icon={<Clock className="h-5 w-5" />}
+          color="amber"
+        />
+        <StatsCard
+          title="Completed Orders"
+          value={completedOrders}
+          subtitle="Successfully delivered"
+          icon={<Package className="h-5 w-5" />}
+          color="purple"
+        />
       </div>
 
       {/* Filters and search */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+      <div className="flex flex-col gap-4 md:flex-row md:items-center">
+        <div className="relative w-full md:w-64">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input 
-            placeholder="Search orders by ID, customer name, or email..." 
-            className="pl-10"
+            placeholder="Search orders..." 
+            className="pl-8"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="flex items-center">
-              <Filter size={16} className="mr-2" />
-              {statusFilter === 'all' ? 'All Statuses' : statusFilter}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setStatusFilter('all')}>
-              All Statuses
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setStatusFilter('pending')}>
-              Pending
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setStatusFilter('processing')}>
-              Processing
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setStatusFilter('shipped')}>
-              Shipped
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setStatusFilter('delivered')}>
-              Delivered
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setStatusFilter('cancelled')}>
-              Cancelled
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Select
+          value={statusFilter}
+          onValueChange={(value) => setStatusFilter(value as OrderStatus | 'all')}
+        >
+          <SelectTrigger className="w-full md:w-[180px]">
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="processing">Processing</SelectItem>
+            <SelectItem value="shipped">Shipped</SelectItem>
+            <SelectItem value="delivered">Delivered</SelectItem>
+            <SelectItem value="cancelled">Cancelled</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Orders table */}
-      <Card>
-        <CardContent className="p-0">
-          {ordersStatus === 'loading' ? (
-            <div className="flex justify-center items-center h-64">
-              <p>Loading orders...</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
+      {ordersStatus === 'loading' ? (
+        <div className="flex justify-center items-center py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-admin-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading orders...</p>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="rounded-md border shadow-sm overflow-hidden">
+            <Table>
+              <TableHeader className="bg-muted/50">
+                <TableRow>
+                  <TableHead>Order ID</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead className="text-center">Items</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-center">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedOrders.length === 0 ? (
                   <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Items</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableCell colSpan={7} className="text-center py-12">
+                      <div className="flex flex-col items-center">
+                        <ShoppingCart className="h-12 w-12 text-muted-foreground mb-4" />
+                        <p className="text-lg font-medium">No orders found</p>
+                        <p className="text-muted-foreground">
+                          {searchQuery || statusFilter !== 'all' 
+                            ? 'Try adjusting your search or filters' 
+                            : 'Orders will appear here once customers start purchasing'
+                          }
+                        </p>
+                      </div>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedOrders.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8">
-                        No orders found.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    paginatedOrders.map((order) => (
-                      <OrderRow 
-                        key={order.id} 
-                        order={order} 
-                        onStatusUpdate={handleStatusUpdate}
-                      />
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ) : (
+                  paginatedOrders.map((order) => (
+                    <OrderRow 
+                      key={order.id} 
+                      order={order} 
+                      onStatusUpdate={handleStatusUpdate}
+                      onNavigate={() => navigate(`/orders/${order.id}`)}
+                      getInitials={getInitials}
+                    />
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
 
-      {/* Pagination */}
-      {filteredOrders.length > 0 && (
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious 
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
-              />
-            </PaginationItem>
-            
-            {Array.from({ length: totalPages }).map((_, index) => (
-              <PaginationItem key={index}>
-                <PaginationLink
-                  onClick={() => setCurrentPage(index + 1)}
-                  isActive={currentPage === index + 1}
-                >
-                  {index + 1}
-                </PaginationLink>
-              </PaginationItem>
-            ))}
-            
-            <PaginationItem>
-              <PaginationNext 
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious 
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+                
+                {Array.from({ length: totalPages }).map((_, index) => (
+                  <PaginationItem key={index}>
+                    <PaginationLink
+                      onClick={() => setCurrentPage(index + 1)}
+                      isActive={currentPage === index + 1}
+                      className="cursor-pointer"
+                    >
+                      {index + 1}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+                
+                <PaginationItem>
+                  <PaginationNext 
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          )}
+        </>
       )}
     </div>
   );
 }
 
-function OrderRow({ order, onStatusUpdate }: { 
+function OrderRow({ 
+  order, 
+  onStatusUpdate, 
+  onNavigate,
+  getInitials 
+}: { 
   order: Order;
   onStatusUpdate: (orderId: string, status: OrderStatus) => void;
+  onNavigate: () => void;
+  getInitials: (name: string) => string;
 }) {
   const getStatusBadgeStyle = (status: OrderStatus) => {
     switch (status) {
@@ -234,88 +327,93 @@ function OrderRow({ order, onStatusUpdate }: {
     }).format(date);
   };
 
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount);
+  };
+
   return (
-    <TableRow className="hover:bg-muted/50">
+    <TableRow 
+      className="hover:bg-muted/20 transition-colors cursor-pointer"
+      onClick={onNavigate}
+    >
       <TableCell className="font-medium">
-        <Link
-          to={`/orders/${order.id}`}
-          className="flex items-center text-blue-600 hover:text-blue-800 hover:underline"
-        >
-          {order.id}
-          <Eye className="ml-1 h-3 w-3" />
-        </Link>
+        <div className="flex items-center gap-2">
+          <span className="text-admin-primary font-mono">{order.id}</span>
+          <Eye className="h-3 w-3 text-muted-foreground" />
+        </div>
       </TableCell>
       <TableCell>
-        <div>{order.customer.name}</div>
-        <div className="text-xs text-muted-foreground">{order.customer.email}</div>
+        <div className="flex items-center space-x-3">
+          <Avatar className="h-8 w-8">
+            <AvatarFallback className="bg-admin-primary/10 text-admin-primary font-semibold text-xs">
+              {getInitials(order.customer.name)}
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <div className="font-medium text-gray-900">{order.customer.name}</div>
+            <div className="text-sm text-muted-foreground">{order.customer.email}</div>
+          </div>
+        </div>
       </TableCell>
       <TableCell>
-        {formatDate(order.createdAt)}
+        <div className="text-sm">{formatDate(order.createdAt)}</div>
       </TableCell>
-      <TableCell>
-        {order.items.length} {order.items.length === 1 ? 'item' : 'items'}
+      <TableCell className="text-center">
+        <Badge variant="outline" className="font-mono">
+          {order.items.length} {order.items.length === 1 ? 'item' : 'items'}
+        </Badge>
       </TableCell>
-      <TableCell>
-        ${order.totalAmount.toFixed(2)}
+      <TableCell className="text-right font-mono">
+        {formatCurrency(order.totalAmount)}
       </TableCell>
       <TableCell>
         <Badge 
           variant="outline" 
-          className={cn("font-normal", getStatusBadgeStyle(order.status))}
+          className={cn("font-normal capitalize", getStatusBadgeStyle(order.status))}
         >
           {order.status}
         </Badge>
       </TableCell>
-      <TableCell>
-        <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                Update Status
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Change Status</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                onClick={() => onStatusUpdate(order.id, 'pending')}
-                disabled={order.status === 'pending'}
-              >
-                Pending
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => onStatusUpdate(order.id, 'processing')}
-                disabled={order.status === 'processing'}
-              >
-                Processing
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => onStatusUpdate(order.id, 'shipped')}
-                disabled={order.status === 'shipped'}
-              >
-                Shipped
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => onStatusUpdate(order.id, 'delivered')}
-                disabled={order.status === 'delivered'}
-              >
-                Delivered
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => onStatusUpdate(order.id, 'cancelled')}
-                disabled={order.status === 'cancelled'}
-              >
-                Cancelled
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+      <TableCell className="text-center">
+        <div className="flex justify-center items-center gap-2">
+          <Select
+            value={order.status}
+            onValueChange={(value) => {
+              if (value !== order.status) {
+                onStatusUpdate(order.id, value as OrderStatus);
+              }
+            }}
+          >
+            <SelectTrigger 
+              className="w-32 h-8 text-xs"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="processing">Processing</SelectItem>
+              <SelectItem value="shipped">Shipped</SelectItem>
+              <SelectItem value="delivered">Delivered</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
           
-          <Link to={`/orders/${order.id}`}>
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <Eye className="h-4 w-4" />
-              <span className="sr-only">View Details</span>
-            </Button>
-          </Link>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8"
+            onClick={(e) => {
+              e.stopPropagation();
+              onNavigate();
+            }}
+            title="View Details"
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
         </div>
       </TableCell>
     </TableRow>

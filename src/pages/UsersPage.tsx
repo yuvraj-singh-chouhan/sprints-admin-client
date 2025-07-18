@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useStore, Customer } from '@/lib/store';
+import { Link, useNavigate } from 'react-router-dom';
+import { useUserRoleStore, User, UserStatus } from '@/lib/userRoleStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -13,15 +13,18 @@ import {
   Ban, 
   Trash2, 
   Search, 
-  User, 
-  Plus,
+  Plus, 
+  Shield, 
+  User as UserIcon,
   Users,
-  DollarSign,
-  ShoppingCart,
-  TrendingUp
+  UserCheck,
+  UserX,
+  Clock
 } from 'lucide-react';
-import CustomerEditDialog from '@/components/customers/CustomerEditDialog';
-import CustomerDeleteDialog from '@/components/customers/CustomerDeleteDialog';
+import UserEditDialog from '@/components/users/UserEditDialog';
+import UserDeleteDialog from '@/components/users/UserDeleteDialog';
+import UserCreateDialog from '@/components/users/UserCreateDialog';
+import UserDetailsDialog from '@/components/users/UserDetailsDialog';
 import { toast } from 'sonner';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import {
@@ -37,76 +40,127 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import StatsCard from '@/components/shared/StatsCard';
 
-const CustomersPage = () => {
-  const { customers, customersStatus, fetchCustomers } = useStore();
+const UsersPage = () => {
+  const { 
+    users, 
+    usersStatus, 
+    roles,
+    fetchUsers, 
+    fetchRoles,
+    fetchPermissions,
+    updateUser,
+    selectedUser,
+    setSelectedUser
+  } = useUserRoleStore();
+  
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [roleFilter, setRoleFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   // Items per page
   const itemsPerPage = 10;
 
   useEffect(() => {
-    fetchCustomers();
-  }, [fetchCustomers]);
+    const initializeData = async () => {
+      await fetchPermissions();
+      await fetchRoles();
+      await fetchUsers();
+    };
+    initializeData();
+  }, [fetchUsers, fetchRoles, fetchPermissions]);
 
-  // Filter customers based on search term and status
-  const filteredCustomers = customers.filter(customer => {
+  // Filter users based on search term, status, and role
+  const filteredUsers = users.filter(user => {
     const matchesSearch = 
-      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.phone.toLowerCase().includes(searchTerm.toLowerCase());
+      user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.phone.toLowerCase().includes(searchTerm.toLowerCase());
       
     const matchesStatus = 
       statusFilter === 'all' || 
-      customer.status === statusFilter;
+      user.status === statusFilter;
+
+    const matchesRole = 
+      roleFilter === 'all' || 
+      user.role.id === roleFilter;
     
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesStatus && matchesRole;
   });
 
   // Calculate pagination
-  const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedCustomers = filteredCustomers.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
 
   // Calculate aggregate stats
-  const totalCustomers = customers.length;
-  const activeCustomers = customers.filter(c => c.status === 'active').length;
-  const totalRevenue = customers.reduce((sum, c) => sum + c.totalSpent, 0);
-  const totalOrders = customers.reduce((sum, c) => sum + c.orders, 0);
+  const totalUsers = users.length;
+  const activeUsers = users.filter(user => user.status === 'active').length;
+  const suspendedUsers = users.filter(user => user.status === 'suspended').length;
+  const inactiveUsers = users.filter(user => user.status === 'inactive').length;
 
-  const toggleCustomerStatus = async (customer: Customer) => {
+  const toggleUserStatus = async (user: User) => {
     try {
-      const newStatus = customer.status === 'active' ? 'banned' : 'active';
+      let newStatus: UserStatus;
+      switch (user.status) {
+        case 'active':
+          newStatus = 'suspended';
+          break;
+        case 'suspended':
+          newStatus = 'active';
+          break;
+        case 'inactive':
+          newStatus = 'active';
+          break;
+        default:
+          newStatus = 'active';
+      }
       
-      useStore.setState({
-        customers: customers.map(c => 
-          c.id === customer.id ? { ...c, status: newStatus } : c
-        )
-      });
-      
-      toast.success(`Customer ${customer.name} ${newStatus === 'active' ? 'activated' : 'banned'} successfully!`);
+      await updateUser(user.id, { status: newStatus });
+      toast.success(`User ${user.firstName} ${user.lastName} ${newStatus === 'active' ? 'activated' : newStatus} successfully!`);
     } catch (error) {
-      toast.error('Failed to update customer status');
-      console.error('Error updating customer status:', error);
+      toast.error('Failed to update user status');
+      console.error('Error updating user status:', error);
     }
   };
 
-  const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  const getStatusBadgeVariant = (status: UserStatus) => {
+    switch (status) {
+      case 'active':
+        return 'default';
+      case 'inactive':
+        return 'secondary';
+      case 'suspended':
+        return 'destructive';
+      default:
+        return 'secondary';
+    }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
+  const formatLastLogin = (lastLogin?: string) => {
+    if (!lastLogin) return 'Never';
+    return new Date(lastLogin).toLocaleDateString();
+  };
+
+  const openUserDetails = (user: User) => {
+    setSelectedUser(user);
+    setIsDetailsOpen(true);
+  };
+
+  const openUserEdit = (user: User) => {
+    setSelectedUser(user);
+    setIsEditOpen(true);
+  };
+
+  const openUserDelete = (user: User) => {
+    setSelectedUser(user);
+    setIsDeleteOpen(true);
   };
 
   return (
@@ -118,7 +172,7 @@ const CustomersPage = () => {
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>Customers</BreadcrumbPage>
+            <BreadcrumbPage>User Management</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
@@ -128,54 +182,54 @@ const CustomersPage = () => {
         <div className="flex items-center gap-2">
           <Users className="h-8 w-8 text-admin-primary" />
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Customers</h1>
-            <p className="text-muted-foreground">Manage your customer base</p>
+            <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
+            <p className="text-muted-foreground">Manage system users and their permissions</p>
           </div>
         </div>
-        <Button className="bg-admin-primary hover:bg-admin-primary-hover">
+        <Button onClick={() => setIsCreateOpen(true)} className="bg-admin-primary hover:bg-admin-primary-hover">
           <Plus className="h-4 w-4 mr-2" />
-          Add Customer
+          Add User
         </Button>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
-          title="Total Customers"
-          value={totalCustomers}
+          title="Total Users"
+          value={totalUsers}
           subtitle="Registered users"
           icon={<Users className="h-5 w-5" />}
           color="blue"
         />
         <StatsCard
-          title="Active Customers"
-          value={activeCustomers}
+          title="Active Users"
+          value={activeUsers}
           subtitle="Currently active"
-          icon={<User className="h-5 w-5" />}
+          icon={<UserCheck className="h-5 w-5" />}
           color="green"
         />
         <StatsCard
-          title="Total Revenue"
-          value={formatCurrency(totalRevenue)}
-          subtitle="From all customers"
-          icon={<DollarSign className="h-5 w-5" />}
-          color="purple"
+          title="Suspended Users"
+          value={suspendedUsers}
+          subtitle="Temporarily suspended"
+          icon={<UserX className="h-5 w-5" />}
+          color="red"
         />
         <StatsCard
-          title="Total Orders"
-          value={totalOrders}
-          subtitle="All time orders"
-          icon={<ShoppingCart className="h-5 w-5" />}
+          title="Inactive Users"
+          value={inactiveUsers}
+          subtitle="Not yet activated"
+          icon={<Clock className="h-5 w-5" />}
           color="amber"
         />
       </div>
-      
+
       {/* Filters */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center">
         <div className="relative w-full md:w-64">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search customers..."
+            placeholder="Search users..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-8"
@@ -191,16 +245,33 @@ const CustomersPage = () => {
           <SelectContent>
             <SelectItem value="all">All Statuses</SelectItem>
             <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="banned">Banned</SelectItem>
+            <SelectItem value="inactive">Inactive</SelectItem>
+            <SelectItem value="suspended">Suspended</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select
+          value={roleFilter}
+          onValueChange={(value) => setRoleFilter(value)}
+        >
+          <SelectTrigger className="w-full md:w-[180px]">
+            <SelectValue placeholder="Filter by role" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Roles</SelectItem>
+            {roles.map((role) => (
+              <SelectItem key={role.id} value={role.id}>
+                {role.name}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
 
-      {customersStatus === 'loading' ? (
+      {usersStatus === 'loading' ? (
         <div className="flex justify-center items-center py-12">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-admin-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading customers...</p>
+            <p className="text-muted-foreground">Loading users...</p>
           </div>
         </div>
       ) : (
@@ -209,73 +280,75 @@ const CustomersPage = () => {
             <Table>
               <TableHeader className="bg-muted/50">
                 <TableRow>
-                  <TableHead>Customer</TableHead>
+                  <TableHead>User</TableHead>
                   <TableHead>Contact</TableHead>
+                  <TableHead>Role</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-center">Orders</TableHead>
-                  <TableHead className="text-right">Total Spent</TableHead>
+                  <TableHead>Last Login</TableHead>
                   <TableHead className="text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedCustomers.length === 0 ? (
+                {paginatedUsers.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-12">
                       <div className="flex flex-col items-center">
                         <Users className="h-12 w-12 text-muted-foreground mb-4" />
-                        <p className="text-lg font-medium">No customers found</p>
+                        <p className="text-lg font-medium">No users found</p>
                         <p className="text-muted-foreground">
-                          {searchTerm || statusFilter !== 'all' 
-                            ? 'Try adjusting your search or filters' 
-                            : 'Add your first customer to get started'
+                          {searchTerm || statusFilter !== 'all' || roleFilter !== 'all'
+                            ? 'Try adjusting your search or filters'
+                            : 'Add your first user to get started'
                           }
                         </p>
                       </div>
                     </TableCell>
                   </TableRow>
                 ) : (
-                  paginatedCustomers.map((customer) => (
+                  paginatedUsers.map((user) => (
                     <TableRow 
-                      key={customer.id} 
+                      key={user.id} 
                       className="hover:bg-muted/20 transition-colors cursor-pointer"
-                      onClick={() => navigate(`/customers/${customer.id}`)}
+                      onClick={() => openUserDetails(user)}
                     >
                       <TableCell>
                         <div className="flex items-center space-x-3">
                           <Avatar className="h-10 w-10">
+                            <AvatarImage src={user.avatar} alt={`${user.firstName} ${user.lastName}`} />
                             <AvatarFallback className="bg-admin-primary/10 text-admin-primary font-semibold">
-                              {getInitials(customer.name)}
+                              {user.firstName.charAt(0)}{user.lastName.charAt(0)}
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <div className="font-medium text-gray-900">{customer.name}</div>
-                            <div className="text-sm text-muted-foreground">{customer.email}</div>
+                            <div className="font-medium text-gray-900">{user.firstName} {user.lastName}</div>
+                            <div className="text-sm text-muted-foreground">{user.email}</div>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
                         <div>
-                          <div className="font-medium">{customer.phone}</div>
-                          <div className="text-sm text-muted-foreground truncate max-w-[200px]">
-                            {customer.address}
+                          <div className="font-medium">{user.phone}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {user.department || 'No department'}
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <Shield className="h-4 w-4 text-admin-primary" />
+                          <span className="font-medium">{user.role.name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
                         <Badge 
-                          variant={customer.status === 'active' ? 'default' : 'destructive'}
+                          variant={getStatusBadgeVariant(user.status)}
                           className="capitalize"
                         >
-                          {customer.status}
+                          {user.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant="outline" className="font-mono">
-                          {customer.orders}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        {formatCurrency(customer.totalSpent)}
+                      <TableCell>
+                        <div className="text-sm">{formatLastLogin(user.lastLogin)}</div>
                       </TableCell>
                       <TableCell className="text-center">
                         <div className="flex justify-center space-x-1">
@@ -284,7 +357,7 @@ const CustomersPage = () => {
                             size="icon"
                             onClick={(e) => {
                               e.stopPropagation();
-                              navigate(`/customers/${customer.id}`);
+                              openUserDetails(user);
                             }}
                             title="View Details"
                           >
@@ -295,10 +368,9 @@ const CustomersPage = () => {
                             size="icon"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setSelectedCustomer(customer);
-                              setIsEditOpen(true);
+                              openUserEdit(user);
                             }}
-                            title="Edit Customer"
+                            title="Edit User"
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -307,9 +379,9 @@ const CustomersPage = () => {
                             size="icon"
                             onClick={(e) => {
                               e.stopPropagation();
-                              toggleCustomerStatus(customer);
+                              toggleUserStatus(user);
                             }}
-                            title={customer.status === 'active' ? 'Ban Customer' : 'Activate Customer'}
+                            title={user.status === 'active' ? 'Suspend User' : 'Activate User'}
                           >
                             <Ban className="h-4 w-4" />
                           </Button>
@@ -318,10 +390,9 @@ const CustomersPage = () => {
                             size="icon"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setSelectedCustomer(customer);
-                              setIsDeleteOpen(true);
+                              openUserDelete(user);
                             }}
-                            title="Delete Customer"
+                            title="Delete User"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -369,20 +440,31 @@ const CustomersPage = () => {
         </>
       )}
 
-      {/* Dialogs */}
-      <CustomerEditDialog
-        customer={selectedCustomer}
+      {/* User dialogs */}
+      <UserCreateDialog
+        open={isCreateOpen}
+        onOpenChange={setIsCreateOpen}
+      />
+
+      <UserEditDialog
+        user={selectedUser}
         open={isEditOpen}
         onOpenChange={setIsEditOpen}
       />
 
-      <CustomerDeleteDialog
-        customer={selectedCustomer}
+      <UserDeleteDialog
+        user={selectedUser}
         open={isDeleteOpen}
         onOpenChange={setIsDeleteOpen}
+      />
+
+      <UserDetailsDialog
+        user={selectedUser}
+        open={isDetailsOpen}
+        onOpenChange={setIsDetailsOpen}
       />
     </div>
   );
 };
 
-export default CustomersPage;
+export default UsersPage; 

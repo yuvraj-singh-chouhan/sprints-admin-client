@@ -16,7 +16,8 @@ import {
   ChevronRight,
   Briefcase,
   Wallet,
-  LogOut
+  LogOut,
+  Shield
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -72,6 +73,8 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
             <NavItem to="/orders" icon={<ShoppingCart size={18} />} label="Orders" open={open} />
             <NavItem to="/vendors" icon={<Briefcase size={18} />} label="Vendors" open={open} />
             <NavItem to="/customers" icon={<User size={18} />} label="Customers" open={open} />
+            <NavItem to="/users" icon={<Users size={18} />} label="User Management" open={open} />
+            <NavItem to="/roles" icon={<Shield size={18} />} label="Role Management" open={open} />
             <NavItem to="/shipping" icon={<Tag size={18} />} label="Shipping" open={open} />
             <NavItem to="/payouts" icon={<Wallet size={18} />} label="Payouts" open={open} />
             <NavItem to="/settings" icon={<Settings size={18} />} label="Settings" open={open} />
