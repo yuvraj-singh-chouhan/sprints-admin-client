@@ -19,6 +19,7 @@ import {
   LogOut,
   Shield
 } from 'lucide-react';
+// import { GiRunningShoe}
 
 interface SidebarProps {
   open: boolean;
@@ -50,7 +51,7 @@ export function Sidebar({ open, setOpen }: SidebarProps) {
           open ? "justify-between" : "justify-center"
         )}>
           {open ? (
-            <h1 className="text-lg font-semibold text-admin-primary">ShoeBox Admin</h1>
+            <h1 className="text-lg font-semibold text-admin-primary">SprintGear</h1>
           ) : (
             <div className="w-8 h-8 bg-admin-primary rounded-lg flex items-center justify-center text-white font-bold">
               S

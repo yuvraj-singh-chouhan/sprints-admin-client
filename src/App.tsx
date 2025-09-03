@@ -20,6 +20,7 @@ const CustomerDetailsPage = lazy(() => import("./pages/CustomerDetailsPage"));
 const VendorsPage = lazy(() => import("./pages/VendorsPage"));
 const VendorDetailsPage = lazy(() => import("./pages/VendorDetailsPage"));
 const UsersPage = lazy(() => import("./pages/UsersPage"));
+const UserDetailsPage = lazy(() => import("./pages/UserDetailsPage"));
 const RolesPage = lazy(() => import("./pages/RolesPage"));
 const ShippingPage = lazy(() => import("./pages/ShippingPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -145,6 +146,14 @@ const App = () => (
               element={
                 <Suspense fallback={<LoadingFallback />}>
                   <UsersPage />
+                </Suspense>
+              } 
+            />
+            <Route 
+              path="users/:userId" 
+              element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <UserDetailsPage />
                 </Suspense>
               } 
             />

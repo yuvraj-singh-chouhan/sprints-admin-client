@@ -1,48 +1,31 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore, Customer } from '@/lib/store';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { 
-  Table, TableBody, TableCell, TableHead, 
-  TableHeader, TableRow 
-} from '@/components/ui/table';
-import { 
-  Eye, 
-  Edit, 
-  Ban, 
-  Trash2, 
-  Search, 
   User, 
   Plus,
   Users,
   DollarSign,
   ShoppingCart,
-  TrendingUp
 } from 'lucide-react';
 import CustomerEditDialog from '@/components/customers/CustomerEditDialog';
 import CustomerDeleteDialog from '@/components/customers/CustomerDeleteDialog';
 import { toast } from 'sonner';
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import StatsCard from '@/components/shared/StatsCard';
+import AvatarWithInitials from '@/components/shared/AvatarWithInitials';
+import PageHeader from '@/components/shared/PageHeader';
+import DataTable from '@/components/shared/DataTable';
+import StatsGrid from '@/components/shared/StatsGrid';
+import StatusBadge from '@/components/shared/StatusBadge';
+import TableActions from '@/components/shared/TableActions';
+import { formatCurrency } from '@/lib/utils';
 
 const CustomersPage = () => {
   const { customers, customersStatus, fetchCustomers } = useStore();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [currentPage, setCurrentPage] = useState(1);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -68,11 +51,6 @@ const CustomersPage = () => {
     return matchesSearch && matchesStatus;
   });
 
-  // Calculate pagination
-  const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedCustomers = filteredCustomers.slice(startIndex, startIndex + itemsPerPage);
-
   // Calculate aggregate stats
   const totalCustomers = customers.length;
   const activeCustomers = customers.filter(c => c.status === 'active').length;
@@ -96,278 +74,174 @@ const CustomersPage = () => {
     }
   };
 
-  const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
-  };
+  // Prepare stats data
+  const statsData = [
+    {
+      title: "Total Customers",
+      value: totalCustomers,
+      icon: <Users className="h-5 w-5" />,
+      color: "blue" as const,
+      subtitle: "Registered users"
+    },
+    {
+      title: "Active Customers", 
+      value: activeCustomers,
+      icon: <User className="h-5 w-5" />,
+      color: "green" as const,
+      subtitle: "Currently active"
+    },
+    {
+      title: "Total Revenue",
+      value: formatCurrency(totalRevenue),
+      icon: <DollarSign className="h-5 w-5" />,
+      color: "purple" as const,
+      subtitle: "From all customers"
+    },
+    {
+      title: "Total Orders",
+      value: totalOrders,
+      icon: <ShoppingCart className="h-5 w-5" />,
+      color: "amber" as const,
+      subtitle: "All time orders"
+    }
+  ];
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
+  // Prepare table columns
+  const columns = [
+    {
+      key: 'name',
+      header: 'Customer',
+      render: (customer: Customer) => (
+        <div className="flex items-center space-x-3">
+          <AvatarWithInitials name={customer.name} size="lg" />
+          <div>
+            <div className="font-medium text-gray-900">{customer.name}</div>
+            <div className="text-sm text-muted-foreground">{customer.email}</div>
+          </div>
+        </div>
+      )
+    },
+    {
+      key: 'contact',
+      header: 'Contact Info', 
+      render: (customer: Customer) => (
+        <div>
+          <div className="font-medium">{customer.phone}</div>
+          <div className="text-sm text-muted-foreground truncate max-w-[200px]">
+            {customer.address}
+          </div>
+        </div>
+      )
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (customer: Customer) => (
+        <StatusBadge status={customer.status} />
+      )
+    },
+    {
+      key: 'orders',
+      header: 'Orders',
+      render: (customer: Customer) => (
+        <div className="text-center">
+          <Badge variant="outline" className="font-mono">
+            {customer.orders}
+          </Badge>
+        </div>
+      )
+    },
+    {
+      key: 'totalSpent',
+      header: 'Total Spent',
+      render: (customer: Customer) => (
+        <div className="text-right font-mono">
+          {formatCurrency(customer.totalSpent)}
+        </div>
+      )
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      render: (customer: Customer) => (
+        <TableActions
+          actions={[
+            {
+              type: 'edit',
+              onClick: () => {
+                setSelectedCustomer(customer);
+                setIsEditOpen(true);
+              },
+              label: 'Edit Customer'
+            },
+            {
+              type: 'ban',
+              onClick: () => toggleCustomerStatus(customer),
+              label: customer.status === 'active' ? 'Ban Customer' : 'Activate Customer'
+            },
+            {
+              type: 'delete',
+              onClick: () => {
+                setSelectedCustomer(customer);
+                setIsDeleteOpen(true);
+              },
+              label: 'Delete Customer'
+            }
+          ]}
+        />
+      )
+    }
+  ];
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/">Dashboard</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>Customers</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
+      <PageHeader
+        title="Customers"
+        description="Manage customer accounts and relationships"
+        icon={<Users className="h-8 w-8" />}
+        breadcrumbs={[
+          { label: "Dashboard", href: "/" },
+          { label: "Customers" }
+        ]}
+        action={{
+          label: "Add Customer",
+          onClick: () => {/* Add customer logic */},
+          icon: <Plus className="h-4 w-4" />
+        }}
+      />
 
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-6 bg-gradient-to-r from-admin-primary/5 to-admin-primary/10 rounded-lg border">
-        <div className="flex items-center gap-2">
-          <Users className="h-8 w-8 text-admin-primary" />
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Customers</h1>
-            <p className="text-muted-foreground">Manage your customer base</p>
-          </div>
-        </div>
-        <Button className="bg-admin-primary hover:bg-admin-primary-hover">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Customer
-        </Button>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatsCard
-          title="Total Customers"
-          value={totalCustomers}
-          subtitle="Registered users"
-          icon={<Users className="h-5 w-5" />}
-          color="blue"
-        />
-        <StatsCard
-          title="Active Customers"
-          value={activeCustomers}
-          subtitle="Currently active"
-          icon={<User className="h-5 w-5" />}
-          color="green"
-        />
-        <StatsCard
-          title="Total Revenue"
-          value={formatCurrency(totalRevenue)}
-          subtitle="From all customers"
-          icon={<DollarSign className="h-5 w-5" />}
-          color="purple"
-        />
-        <StatsCard
-          title="Total Orders"
-          value={totalOrders}
-          subtitle="All time orders"
-          icon={<ShoppingCart className="h-5 w-5" />}
-          color="amber"
-        />
-      </div>
+      <StatsGrid stats={statsData} />
       
-      {/* Filters */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center">
-        <div className="relative w-full md:w-64">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search customers..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-8"
-          />
-        </div>
-        <Select
-          value={statusFilter}
-          onValueChange={(value) => setStatusFilter(value)}
-        >
-          <SelectTrigger className="w-full md:w-[180px]">
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="banned">Banned</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {customersStatus === 'loading' ? (
-        <div className="flex justify-center items-center py-12">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-admin-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading customers...</p>
-          </div>
-        </div>
-      ) : (
-        <>
-          <div className="rounded-md border shadow-sm overflow-hidden">
-            <Table>
-              <TableHeader className="bg-muted/50">
-                <TableRow>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-center">Orders</TableHead>
-                  <TableHead className="text-right">Total Spent</TableHead>
-                  <TableHead className="text-center">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedCustomers.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-12">
-                      <div className="flex flex-col items-center">
-                        <Users className="h-12 w-12 text-muted-foreground mb-4" />
-                        <p className="text-lg font-medium">No customers found</p>
-                        <p className="text-muted-foreground">
-                          {searchTerm || statusFilter !== 'all' 
-                            ? 'Try adjusting your search or filters' 
-                            : 'Add your first customer to get started'
-                          }
-                        </p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  paginatedCustomers.map((customer) => (
-                    <TableRow 
-                      key={customer.id} 
-                      className="hover:bg-muted/20 transition-colors cursor-pointer"
-                      onClick={() => navigate(`/customers/${customer.id}`)}
-                    >
-                      <TableCell>
-                        <div className="flex items-center space-x-3">
-                          <Avatar className="h-10 w-10">
-                            <AvatarFallback className="bg-admin-primary/10 text-admin-primary font-semibold">
-                              {getInitials(customer.name)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className="font-medium text-gray-900">{customer.name}</div>
-                            <div className="text-sm text-muted-foreground">{customer.email}</div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{customer.phone}</div>
-                          <div className="text-sm text-muted-foreground truncate max-w-[200px]">
-                            {customer.address}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={customer.status === 'active' ? 'default' : 'destructive'}
-                          className="capitalize"
-                        >
-                          {customer.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant="outline" className="font-mono">
-                          {customer.orders}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        {formatCurrency(customer.totalSpent)}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex justify-center space-x-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/customers/${customer.id}`);
-                            }}
-                            title="View Details"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedCustomer(customer);
-                              setIsEditOpen(true);
-                            }}
-                            title="Edit Customer"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleCustomerStatus(customer);
-                            }}
-                            title={customer.status === 'active' ? 'Ban Customer' : 'Activate Customer'}
-                          >
-                            <Ban className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedCustomer(customer);
-                              setIsDeleteOpen(true);
-                            }}
-                            title="Delete Customer"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious 
-                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                    className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                  />
-                </PaginationItem>
-                
-                {Array.from({ length: totalPages }).map((_, index) => (
-                  <PaginationItem key={index}>
-                    <PaginationLink
-                      onClick={() => setCurrentPage(index + 1)}
-                      isActive={currentPage === index + 1}
-                      className="cursor-pointer"
-                    >
-                      {index + 1}
-                    </PaginationLink>
-                  </PaginationItem>
-                ))}
-                
-                <PaginationItem>
-                  <PaginationNext 
-                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                    className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          )}
-        </>
-      )}
+      <DataTable
+        data={filteredCustomers}
+        columns={columns}
+        searchPlaceholder="Search customers..."
+        filters={
+          <Select
+            value={statusFilter}
+            onValueChange={(value) => setStatusFilter(value)}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="banned">Banned</SelectItem>
+            </SelectContent>
+          </Select>
+        }
+        emptyState={{
+          icon: <Users className="h-12 w-12" />,
+          title: "No customers found",
+          description: searchTerm || statusFilter !== 'all' 
+            ? 'Try adjusting your search or filters' 
+            : 'Add your first customer to get started'
+        }}
+        onRowClick={(customer) => navigate(`/customers/${customer.id}`)}
+        loading={customersStatus === 'loading'}
+        itemsPerPage={itemsPerPage}
+      />
 
       {/* Dialogs */}
       <CustomerEditDialog
